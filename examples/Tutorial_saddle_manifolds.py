@@ -17,6 +17,7 @@ gentype = dst.Generator.Radau_ODEsystem
 # ------------------------------
 
 def build_sys():
+    """Build system of ODEs"""
     # we must give a name
     DSargs = dst.args(name='M345_A3_Bead_on_a_rotating_hoop')
 
@@ -40,21 +41,21 @@ def build_sys():
 
     # to avoid typos / bugs, use built-in Symbolic differentation!
     f = [DSargs.varspecs['phi'], DSargs.varspecs['nu']]
-    Df=dst.Diff(f, ['phi', 'nu'])
-    DSargs.fnspecs = {'Jacobian': (['t','phi','nu'],
+    Df = dst.Diff(f, ['phi', 'nu'])
+    DSargs.fnspecs = {'Jacobian': (['t', 'phi', 'nu'],
                                    str(Df.renderForCode()))}
     # yields """[[0, 1], [g*cos(phi)*cos(phi) - g*sin(phi)*sin(phi) - cos(phi), -d]]""")}
     print("Jacobian computed as:\n" + str(Df.renderForCode()))
 
     # Make auxiliary functions to define event lines near saddle
     res = pp.make_distance_to_line_auxfn('Gamma_out_plus',
-                                      'Gamma_out_plus_fn',
-                                      ('phi','nu'), True)
+                                         'Gamma_out_plus_fn',
+                                         ('phi', 'nu'), True)
     man_pars = res['pars']
     man_auxfns = res['auxfn']
     res = pp.make_distance_to_line_auxfn('Gamma_out_minus',
-                                      'Gamma_out_minus_fn',
-                                      ('phi','nu'), True)
+                                         'Gamma_out_minus_fn',
+                                         ('phi', 'nu'), True)
     man_pars.extend(res['pars'])
     man_auxfns.update(res['auxfn'])
 
@@ -68,39 +69,39 @@ def build_sys():
         targetlang = 'c'
 
     DSargs.fnspecs.update(man_auxfns)
-    ev_plus = dst.Events.makeZeroCrossEvent(expr='Gamma_out_plus_fn(%s,%s)'%('phi','nu'),
-                                         dircode=0,
-                                         argDict={'name': 'Gamma_out_plus',
-                                                  'eventtol': 1e-5,
-                                                  'eventdelay': 1e-3,
-                                                  'starttime': 0,
-                                                  'precise': False,
-                                                  'active': False,
-                                                  'term': True},
-                                         targetlang=targetlang,
-                                         varnames=['phi','nu'],
-                                         fnspecs=man_auxfns,
-                                         parnames=man_pars
-                                        )
-    ev_minus = dst.Events.makeZeroCrossEvent(expr='Gamma_out_minus_fn(%s,%s)'%('phi','nu'),
-                                         dircode=0,
-                                         argDict={'name': 'Gamma_out_minus',
-                                                  'eventtol': 1e-5,
-                                                  'eventdelay': 1e-3,
-                                                  'starttime': 0,
-                                                  'precise': False,
-                                                  'active': False,
-                                                  'term': True},
-                                         targetlang=targetlang,
-                                         varnames=['phi','nu'],
-                                         fnspecs=man_auxfns,
-                                         parnames=man_pars
-                                         )
+    ev_plus = dst.Events.makeZeroCrossEvent(expr='Gamma_out_plus_fn(%s,%s)'%('phi', 'nu'),
+                                            dircode=0,
+                                            argDict={'name': 'Gamma_out_plus',
+                                                     'eventtol': 1e-5,
+                                                     'eventdelay': 1e-3,
+                                                     'starttime': 0,
+                                                     'precise': False,
+                                                     'active': False,
+                                                     'term': True},
+                                            targetlang=targetlang,
+                                            varnames=['phi', 'nu'],
+                                            fnspecs=man_auxfns,
+                                            parnames=man_pars
+                                           )
+    ev_minus = dst.Events.makeZeroCrossEvent(expr='Gamma_out_minus_fn(%s,%s)'%('phi', 'nu'),
+                                             dircode=0,
+                                             argDict={'name': 'Gamma_out_minus',
+                                                      'eventtol': 1e-5,
+                                                      'eventdelay': 1e-3,
+                                                      'starttime': 0,
+                                                      'precise': False,
+                                                      'active': False,
+                                                      'term': True},
+                                             targetlang=targetlang,
+                                             varnames=['phi', 'nu'],
+                                             fnspecs=man_auxfns,
+                                             parnames=man_pars
+                                            )
 
     DSargs.events = [ev_plus, ev_minus]
 
     # an instance of the 'Generator' class.
-    print "Initializing generator..."
+    print("Initializing generator...")
     return gentype(DSargs)
 
 def plot_PP_fps_custom(fps, coords=None, do_evecs=False, markersize=10, flip_coords=False):
@@ -127,7 +128,7 @@ def plot_PP_fps_custom(fps, coords=None, do_evecs=False, markersize=10, flip_coo
         else: # 's'
             style = 'ko'
 
-        if flip_coords == True:
+        if flip_coords is True:
             plt.plot(fp.point[y], fp.point[x], style, markersize=markersize, mew=2)
         else:
             plt.plot(fp.point[x], fp.point[y], style, markersize=markersize, mew=2)
@@ -179,29 +180,28 @@ def plot_PP_vf_custom(gen, xname, yname, N=20, subdomain=None, scale_exp=0):
     dxs, dys = np.meshgrid(xs, ys)
 
     dz_big = 0
-    vec_dict = {}
 
     for xi, x in enumerate(xs):
         for yi, y in enumerate(ys):
             xdict.update({xname: x, yname: y})
             dx, dy = gen.Rhs(0, xdict)[[xix, yix]]
             # note order of indices
-            dxs[yi,xi] = dx
-            dys[yi,xi] = dy
-            dz = np.linalg.norm((dx,dy))
+            dxs[yi, xi] = dx
+            dys[yi, xi] = dy
+            dz = np.linalg.norm((dx, dy))
             if dz > dz_big:
                 dz_big = dz
 
     plt.quiver(X, Y, dxs, dys, angles='xy', pivot='middle', units='inches',
-               scale=dz_big*max(h,w)/(10*np.exp(2*scale_exp)), lw=0.01/np.exp(scale_exp-1),
-               headwidth=max(2,1.5/(np.exp(scale_exp-1))),
+               scale=dz_big*max(h, w)/(10*np.exp(2*scale_exp)), lw=0.01/np.exp(scale_exp-1),
+               headwidth=max(2, 1.5/(np.exp(scale_exp-1))),
                #headlength=2*max(2,1.5/(exp(scale_exp-1))),
-               width=0.001*max(h,w), minshaft=2, minlength=0.001)
+               width=0.001*max(h, w), minshaft=2, minlength=0.001)
 
     ax = plt.gca()
 
-    print "xdom: ", xdom
-    print "ydom: ", ydom
+    print("xdom: ", xdom)
+    print("ydom: ", ydom)
     ax.set_xlim(xdom)
     ax.set_ylim(ydom)
     plt.draw()
@@ -209,7 +209,7 @@ def plot_PP_vf_custom(gen, xname, yname, N=20, subdomain=None, scale_exp=0):
 
 def test_traj(ic, tend=20):
     """Convenience function for exploring trajectories"""
-    ode_sys.set(ics=ic, tdata=[0,tend])
+    ode_sys.set(ics=ic, tdata=[0, tend])
     traj = ode_sys.compute('test')
     pts = traj.sample()
     plt.plot(pts['phi'], pts['nu'], 'k:', lw=1)
@@ -242,14 +242,14 @@ nulls_x, nulls_y = pp.find_nullclines(ode_sys, 'phi', 'nu', n=3,
 # plot the fixed points
 fps = []
 for fp_coord in fp_coords:
-    fps.append( pp.fixedpoint_2D(ode_sys, dst.Point(fp_coord)) )
+    fps.append(pp.fixedpoint_2D(ode_sys, dst.Point(fp_coord)))
 
 for fp_obj in fps:
     plot_PP_fps_custom(fp_obj, do_evecs=True, markersize=7, flip_coords=True)
 
 # plot the nullclines
-plt.plot(nulls_x[:,0], nulls_x[:,1], 'b')
-plt.plot(nulls_y[:,0], nulls_y[:,1], 'g')
+plt.plot(nulls_x[:, 0], nulls_x[:, 1], 'b')
+plt.plot(nulls_y[:, 0], nulls_y[:, 1], 'g')
 
 
 plt.axis('tight')
@@ -268,9 +268,11 @@ plt.show()
 ode_sys.set(algparams={'magBound': 10000})
 
 def plot_manifold(man, which, style='k.-'):
+    """helper function to plot manifolds"""
     for sgn in (-1, 1):
         if man[which][sgn] is not None:
-            print("There were %i points in sub-manifold %s, direction %i" % (len(man[which][sgn]), which, sgn))
+            print("There were %i points in sub-manifold %s, direction %i" %
+                  (len(man[which][sgn]), which, sgn))
             plt.plot(man[which][sgn]['phi'], man[which][sgn]['nu'], style)
 
 saddle = fps[1]
@@ -282,21 +284,21 @@ saddle = fps[1]
 # -1 means 'backwards' direction
 
 manifold_parts = {
-            'u': {1: dst.Pointset(indepvarname='arc_len',
-                              indepvararray=[0],
-                              coorddict=saddle.point),
-                  -1: dst.Pointset(indepvarname='arc_len',
-                              indepvararray=[0],
-                              coorddict=saddle.point)},
-            's': {1: dst.Pointset(indepvarname='arc_len',
-                                          indepvararray=[0],
-                                          coorddict=saddle.point),
-                 -1: dst.Pointset(indepvarname='arc_len',
-                                          indepvararray=[0],
-                                          coorddict=saddle.point)}
-            }
+    'u': {1: dst.Pointset(indepvarname='arc_len',
+                          indepvararray=[0],
+                          coorddict=saddle.point),
+          -1: dst.Pointset(indepvarname='arc_len',
+                           indepvararray=[0],
+                           coorddict=saddle.point)},
+    's': {1: dst.Pointset(indepvarname='arc_len',
+                          indepvararray=[0],
+                          coorddict=saddle.point),
+          -1: dst.Pointset(indepvarname='arc_len',
+                           indepvararray=[0],
+                           coorddict=saddle.point)}
+}
 
-ode_sys.set(ics=saddle.point, tdata=[0,60])
+ode_sys.set(ics=saddle.point, tdata=[0, 60])
 
 verbose = 0
 max_pts = 600
@@ -318,13 +320,15 @@ for which_man in ['s', 'u']:
             # are close to the saddle point
             if len(man_part) == 1:
                 # first stage (only called once)
-                print "  First stage..."
+                print("  First stage...")
                 ode_sys.set(algparams={'max_pts': 20000})
                 man_new = pp.find_saddle_manifolds(saddle, 'phi', ds=0.004, ds_gamma=0.02,
-                                ds_perp=0.005, tmax=60, max_arclen=max_arclen, eps=2e-5,
-                                ic_ds=0.0002, max_pts=250, directions=(dirn,), ev_dirn=1,
-                                which=(which_man,), other_pts=[fps[0].point, fps[2].point],
-                                rel_scale=(1,1), verboselevel=verbose, fignum=1)
+                                                   ds_perp=0.005, tmax=60, max_arclen=max_arclen,
+                                                   eps=2e-5, ic_ds=0.0002, max_pts=250,
+                                                   directions=(dirn,), ev_dirn=1,
+                                                   which=(which_man,),
+                                                   other_pts=[fps[0].point, fps[2].point],
+                                                   rel_scale=(1, 1), verboselevel=verbose, fignum=1)
                 part = man_new[which_man][dirn]
                 if dirn == 1:
                     select = -1
@@ -351,11 +355,14 @@ for which_man in ['s', 'u']:
                 try:
                     # groups of max_pts/4 at a time
                     man_new = pp.find_saddle_manifolds(saddle, 'phi', ds=0.06, ds_gamma=ds_gamma,
-                                ds_perp=ds_perp, tmax=40, max_arclen=max_arclen, eps=2e-5,
-                                ic=man_part[select], max_pts=int(max_pts/4.0),
-                                directions=(dirn,), ev_dirn=1,
-                                which=(which_man,), other_pts=[fps[0].point, fps[2].point],
-                                rel_scale=(1,1), verboselevel=verbose, fignum=1)
+                                                       ds_perp=ds_perp, tmax=40,
+                                                       max_arclen=max_arclen, eps=2e-5,
+                                                       ic=man_part[select],
+                                                       max_pts=int(max_pts/4.0), directions=(dirn,),
+                                                       ev_dirn=1, which=(which_man,),
+                                                       other_pts=[fps[0].point, fps[2].point],
+                                                       rel_scale=(1, 1), verboselevel=verbose,
+                                                       fignum=1)
                 except RuntimeError:
                     # proceed with what we've got
                     print("Initial convergence error: Proceeding with what we've got!")
